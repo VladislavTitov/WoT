@@ -92,10 +92,10 @@ public class TankPlayer implements Algorithm {
     private byte getDirectionByDeltas(Deltas deltas) {
         int x = deltas.getDeltaX();
         int y = deltas.getDeltaY();
-        if (abs(x) - abs(y) > 0) {
+        if (abs(x) - abs(y) >= 0) {
             if (x > 0) {
                 return Direction.RIGHT;
-            } else if (x < 0){
+            } else {
                 return Direction.LEFT;
             }
         } else if (abs(x) - abs(y) < 0){
