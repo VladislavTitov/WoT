@@ -144,45 +144,55 @@ public class TankPlayer implements Algorithm {
     private byte findDirectionToGateWay(Position wallPosition, byte direction) {
         Position firstPosition;
         Position secondPosition;
-        if (direction == Direction.UP || direction == Direction.DOWN) {
-            firstPosition = new Position(wallPosition.getX() - 1, wallPosition.getY());
-            secondPosition = new Position(wallPosition.getX() + 1, wallPosition.getY());
-        } else/* if (direction != Direction.NO) */{
-            firstPosition = new Position(wallPosition.getX(), wallPosition.getY() - 1);
-            secondPosition = new Position(wallPosition.getX(), wallPosition.getY() + 1);
-        }
-        boolean firstPositionIsWall = isWall(firstPosition);
-        boolean secondPositionIsWall = isWall(secondPosition);
-        if (firstPositionIsWall & !secondPositionIsWall) {
+        int firstX = wallPosition.getX();
+        int firstY = wallPosition.getY();
+        int secondX = wallPosition.getX();
+        int secondY = wallPosition.getY();
+        int count = 0;
+        while (true) {
             if (direction == Direction.UP || direction == Direction.DOWN) {
-                return Direction.LEFT;
-            } else {
-                return Direction.UP;
+                firstPosition = new Position(firstX - 1, firstY);
+                secondPosition = new Position(secondX + 1, secondY);
+            } else/* if (direction != Direction.NO) */ {
+                firstPosition = new Position(firstX, firstY - 1);
+                secondPosition = new Position(secondX, secondY + 1);
             }
-        }
-        if (!firstPositionIsWall & secondPositionIsWall) {
-            if (direction == Direction.UP || direction == Direction.DOWN) {
-                return Direction.RIGHT;
-            } else {
-                return Direction.DOWN;
-            }
-        }
-        if (firstPositionIsWall & secondPositionIsWall) {
-            Random random = new Random();
-            int randomVar = random.nextInt(2);
-            if (direction == Direction.UP || direction == Direction.DOWN) {
-                if (randomVar == 0){
+            boolean firstPositionIsWall = isWall(firstPosition);
+            boolean secondPositionIsWall = isWall(secondPosition);
+            if (!firstPositionIsWall & secondPositionIsWall) {
+                if (direction == Direction.UP || direction == Direction.DOWN) {
                     return Direction.LEFT;
+                } else {
+                    return Direction.UP;
                 }
-                return Direction.RIGHT;
-            } else {
-                if (randomVar == 0){
-                    return Direction.LEFT;
+            }
+            if (firstPositionIsWall & !secondPositionIsWall) {
+                if (direction == Direction.UP || direction == Direction.DOWN) {
+                    return Direction.RIGHT;
+                } else {
+                    return Direction.DOWN;
                 }
-                return Direction.DOWN;
+            }
+            if (!firstPositionIsWall & !secondPositionIsWall) {
+                Random random = new Random();
+                int randomVar = random.nextInt(2);
+                if (direction == Direction.UP || direction == Direction.DOWN) {
+                    if (randomVar == 0) {
+                        return Direction.LEFT;
+                    }
+                    return Direction.RIGHT;
+                } else {
+                    if (randomVar == 0) {
+                        return Direction.LEFT;
+                    }
+                    return Direction.DOWN;
+                }
+            }
+            count++;
+            if (count >= 100){
+                return Direction.NO;
             }
         }
-        return Direction.NO; //TODO выяснить не мешает ли это нормальному функционированию
     }
 
     private byte getDirectionByDeltas(Deltas deltas) {
