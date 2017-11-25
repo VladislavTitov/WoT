@@ -9,6 +9,7 @@ import com.aci.student24.api.tanks.state.Direction;
 import com.aci.student24.api.tanks.state.MapState;
 import com.aci.student24.api.tanks.state.TankMove;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -27,6 +28,11 @@ public class TankPlayer implements Algorithm {
     private Random rn;
     private Tank tank;
 
+    private int width;
+    private int height;
+
+    private List<Tank> ourTanks = new ArrayList<>();
+
     @Override
     public void setMyId(final int id) {
         teamId = id;
@@ -36,14 +42,15 @@ public class TankPlayer implements Algorithm {
     public List<TankMove> nextMoves(MapState mapState) {
         if (count == 0) {
             initBaseParametrs(mapState);
-            indestructibles = mapState.getIndestructibles();
             rn = new Random();
         }
         count++;
+        ourTanks = mapState.getTanks(teamId);
+
         return mapState.getTanks().stream().map(tank1 -> {
             tank = tank1;
             byte direction = move(tank1, getBestDirection(tank1, enemyBase));
-            return new TankMove(tank1.getId(), direction, true);
+            return new TankMove(tank1.getId(), direction, isShootSave(tank1));
         }).collect(Collectors.toList());
     }
 
@@ -56,9 +63,9 @@ public class TankPlayer implements Algorithm {
     public byte move(Position oldPosition, Position newPosition) {
         if (newPosition.getX() - oldPosition.getX() > 0) {
             return Direction.RIGHT;
-        } else if (newPosition.getX() - oldPosition.getX() < 0){
+        } else if (newPosition.getX() - oldPosition.getX() < 0) {
             return Direction.LEFT;
-        }else if (newPosition.getY() - oldPosition.getY() > 0) {
+        } else if (newPosition.getY() - oldPosition.getY() > 0) {
             return Direction.UP;
         } else if (newPosition.getY() - oldPosition.getY() < 0) {
             return Direction.DOWN;
@@ -68,14 +75,60 @@ public class TankPlayer implements Algorithm {
 
     private boolean isWall(Position checkingPosition) {
         for (Indestructible indestructible : indestructibles) {
-            if (checkingPosition.equals(indestructible)){
+            if (checkingPosition.equals(indestructible)) {
                 return true;
             }
         }
         return false;
     }
 
-    public Position getBestDirection (Position currentPosition, Position enemyBasePosition) {
+    public boolean isShootSave(Tank tank) {
+        List<Position> lineOfSight = getLineOfSight(tank);
+        for (Position position : lineOfSight) {
+            if (ourBase.getPosition().equals(position)) {
+                return false;
+            }
+            for (Tank currentTank:ourTanks){
+                if (currentTank.getPosition().equals(position)){
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private List<Position> getLineOfSight(Tank tank) {
+        List<Position> lineOfSight = new ArrayList<>();
+        int xTank = tank.getX();
+        int yTank = tank.getY();
+
+        int count;
+        switch (tank.getDir()) {
+            case Direction.UP:
+                count = height - yTank;
+                for (int i = 1; i < count; i++)
+                    lineOfSight.add(new Position(xTank, yTank + i));
+                break;
+            case Direction.DOWN:
+                count = yTank;
+                for (int i = 1; i < count; i++)
+                    lineOfSight.add(new Position(xTank, yTank - i));
+                break;
+            case Direction.LEFT:
+                count = xTank;
+                for (int i = 1; i < count; i++)
+                    lineOfSight.add(new Position(xTank - i, yTank));
+                break;
+            case Direction.RIGHT:
+                count = width - xTank;
+                for (int i = 1; i < count; i++)
+                    lineOfSight.add(new Position(xTank + i, yTank));
+                break;
+        }
+        return lineOfSight;
+    }
+
+    public Position getBestDirection(Position currentPosition, Position enemyBasePosition) {
         Deltas deltas = calculateDeltas(currentPosition, enemyBasePosition);
         byte possibleDirection = getDirectionByDeltas(deltas);
         Position checkingPosition = getNewPosition(currentPosition, possibleDirection);
@@ -95,13 +148,13 @@ public class TankPlayer implements Algorithm {
         if (abs(x) - abs(y) > 0) {
             if (x > 0) {
                 return Direction.RIGHT;
-            } else if (x < 0){
+            } else if (x < 0) {
                 return Direction.LEFT;
             }
-        } else if (abs(x) - abs(y) < 0){
+        } else if (abs(x) - abs(y) < 0) {
             if (y > 0) {
                 return Direction.UP;
-            }else if (y < 0) {
+            } else if (y < 0) {
                 return Direction.DOWN;
             }
         }
@@ -124,6 +177,10 @@ public class TankPlayer implements Algorithm {
     }
 
     private void initBaseParametrs(MapState mapState) {
+        width = mapState.getSize().getWidth();
+        height = mapState.getSize().getHeight();
+
+        indestructibles = mapState.getIndestructibles();
         mapState.getBases().forEach(base -> {
             if (base.getTeamId() == teamId)
                 ourBase = base;
