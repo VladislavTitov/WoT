@@ -137,7 +137,7 @@ public class TankPlayer implements Algorithm {
         if (!isWall(checkingPosition)) {
             return checkingPosition;
         } else {
-            return getNewPosition(checkingPosition, findDirectionToGateWay(checkingPosition, possibleDirection));
+            return getNewPosition(currentPosition, findDirectionToGateWay(checkingPosition, possibleDirection));
         }
     }
 
@@ -151,11 +151,11 @@ public class TankPlayer implements Algorithm {
         int count = 0;
         while (true) {
             if (direction == Direction.UP || direction == Direction.DOWN) {
-                firstPosition = new Position(firstX - 1, firstY);
-                secondPosition = new Position(secondX + 1, secondY);
+                firstPosition = new Position(--firstX, firstY);
+                secondPosition = new Position(++secondX, secondY);
             } else/* if (direction != Direction.NO) */ {
-                firstPosition = new Position(firstX, firstY - 1);
-                secondPosition = new Position(secondX, secondY + 1);
+                firstPosition = new Position(firstX, --firstY);
+                secondPosition = new Position(secondX, ++secondY);
             }
             boolean firstPositionIsWall = isWall(firstPosition);
             boolean secondPositionIsWall = isWall(secondPosition);
@@ -198,13 +198,13 @@ public class TankPlayer implements Algorithm {
     private byte getDirectionByDeltas(Deltas deltas) {
         int x = deltas.getDeltaX();
         int y = deltas.getDeltaY();
-        if (abs(x) - abs(y) > 0) {
+        if (abs(x) - abs(y) < 0) {
             if (x > 0) {
                 return Direction.RIGHT;
             } else if (x < 0){
                 return Direction.LEFT;
             }
-        } else if (abs(x) - abs(y) < 0) {
+        } else if (abs(x) - abs(y) > 0) {
             if (y > 0) {
                 return Direction.DOWN;
             } else if (y < 0) {
