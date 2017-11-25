@@ -24,10 +24,6 @@ public class TankPlayer implements Algorithm {
     private int count = 0;
     private List<Indestructible> indestructibles;
 
-    private int i = 0;
-    private Random rn;
-    private Tank tank;
-
     private int width;
     private int height;
 
@@ -42,13 +38,11 @@ public class TankPlayer implements Algorithm {
     public List<TankMove> nextMoves(MapState mapState) {
         if (count == 0) {
             initBaseParametrs(mapState);
-            rn = new Random();
         }
         count++;
         ourTanks = mapState.getTanks(teamId);
 
         return mapState.getTanks().stream().map(tank1 -> {
-            tank = tank1;
             byte direction = move(tank1, getBestDirection(tank1, enemyBase));
             return new TankMove(tank1.getId(), direction, isShootSave(tank1));
         }).collect(Collectors.toList());
@@ -74,6 +68,14 @@ public class TankPlayer implements Algorithm {
     }
 
     private boolean isWall(Position checkingPosition) {
+        if (indestructibles == null) {
+            return false;
+        }
+        int x = checkingPosition.getX();
+        int y = checkingPosition.getY();
+        if (x < 0 || x > width - 1 || y < 0 || y > height - 1){
+            return true;
+        }
         for (Indestructible indestructible : indestructibles) {
             if (checkingPosition.equals(indestructible)) {
                 return true;
@@ -135,27 +137,74 @@ public class TankPlayer implements Algorithm {
         if (!isWall(checkingPosition)) {
             return checkingPosition;
         } else {
-            i++;
-            int randomDir = rn.nextInt(4) + 1;
-            int dir = (i % 2 == 0) ? tank.getDir() : randomDir;
-            return getNewPosition(currentPosition, (byte) dir);
+            return getNewPosition(checkingPosition, findDirectionToGateWay(checkingPosition, possibleDirection));
         }
+    }
+
+    private byte findDirectionToGateWay(Position wallPosition, byte direction) {
+        Position firstPosition;
+        Position secondPosition;
+        if (direction == Direction.UP || direction == Direction.DOWN) {
+            firstPosition = new Position(wallPosition.getX() - 1, wallPosition.getY());
+            secondPosition = new Position(wallPosition.getX() + 1, wallPosition.getY());
+        } else/* if (direction != Direction.NO) */{
+            firstPosition = new Position(wallPosition.getX(), wallPosition.getY() - 1);
+            secondPosition = new Position(wallPosition.getX(), wallPosition.getY() + 1);
+        }
+        boolean firstPositionIsWall = isWall(firstPosition);
+        boolean secondPositionIsWall = isWall(secondPosition);
+        if (firstPositionIsWall & !secondPositionIsWall) {
+            if (direction == Direction.UP || direction == Direction.DOWN) {
+                return Direction.LEFT;
+            } else {
+                return Direction.UP;
+            }
+        }
+        if (!firstPositionIsWall & secondPositionIsWall) {
+            if (direction == Direction.UP || direction == Direction.DOWN) {
+                return Direction.RIGHT;
+            } else {
+                return Direction.DOWN;
+            }
+        }
+        if (firstPositionIsWall & secondPositionIsWall) {
+            Random random = new Random();
+            int randomVar = random.nextInt(2);
+            if (direction == Direction.UP || direction == Direction.DOWN) {
+                if (randomVar == 0){
+                    return Direction.LEFT;
+                }
+                return Direction.RIGHT;
+            } else {
+                if (randomVar == 0){
+                    return Direction.LEFT;
+                }
+                return Direction.DOWN;
+            }
+        }
+        return Direction.NO; //TODO выяснить не мешает ли это нормальному функционированию
     }
 
     private byte getDirectionByDeltas(Deltas deltas) {
         int x = deltas.getDeltaX();
         int y = deltas.getDeltaY();
-        if (abs(x) - abs(y) >= 0) {
+        if (abs(x) - abs(y) > 0) {
             if (x > 0) {
                 return Direction.RIGHT;
-            } else {
+            } else if (x < 0){
                 return Direction.LEFT;
             }
         } else if (abs(x) - abs(y) < 0) {
             if (y > 0) {
-                return Direction.UP;
-            } else if (y < 0) {
                 return Direction.DOWN;
+            } else if (y < 0) {
+                return Direction.UP;
+            }
+        } else if (abs(x) - abs(y) == 0) {
+            if (x > 0) {
+                return Direction.RIGHT;
+            } else if (x < 0){
+                return Direction.LEFT;
             }
         }
         return Direction.NO;
